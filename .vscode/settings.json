@@ -1,0 +1,15 @@
+{
+    "files.autoSave": "afterDelay",
+    "workbench.commandPalette.showAskInChat": false,
+    "chat.agent.enabled": false,
+    "chat.checkpoints.showFileChanges": true,
+    "chat.agent.codeBlockProgress": false,
+    "chat.agent.thinking.collapsedTools": "off",
+    "chat.agent.thinking.generateTitles": false,
+    "chat.agent.thinking.terminalTools": false,
+    "editor.mouseWheelZoom": true,
+    "editor.smoothScrolling": true,
+    "workbench.list.smoothScrolling": true,
+    "terminal.integrated.smoothScrolling": true,
+    "editor.cursorSmoothCaretAnimation": "on"
+}
