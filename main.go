@@ -1,17 +1,17 @@
 package main
 
 import (
-	// "bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
-
-	// "strings"
+	"strings"
 	"syscall"
 
-	// "os/exec"
 	"github.com/bwmarrin/discordgo"
+	"github.com/google/generative-ai-go/genai"
 	"github.com/joho/godotenv"
+	"google.golang.org/api/option"
 )
 
 func massagecreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -29,11 +29,64 @@ func massagecreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if m.Content == "!ping" {
 
-		latancy := s.HeartbeatLatency()
-		pintmsg := fmt.Sprintf("🏓 Pong! : **%v**", latancy)
+		latancy := float64(s.HeartbeatLatency().Microseconds()) / 1000.0
+		pintmsg := fmt.Sprintf("🏓 Pong! : **%.1fms**", latancy)
 		s.ChannelMessageSend(m.ChannelID, pintmsg)
 
 	}
+
+	// new command
+
+	if strings.HasPrefix(m.Content, "!ask ") {
+
+		// removeing the command and prefix form the command
+
+		question := strings.TrimPrefix(m.Content, "!ask ")
+
+		// showing thinking in the channel
+
+		s.ChannelTyping(m.ChannelID)
+
+		// get the answer form the function we made
+
+		answer := askGemini(question)
+
+		// sent it by the bot
+
+		s.ChannelMessageSend(m.ChannelID, answer)
+
+	}
+
+}
+
+func askGemini(userInput string) string {
+
+	api := os.Getenv("API")
+	ctx := context.Background()
+
+	// api key
+
+	client, err := genai.NewClient(ctx, option.WithAPIKey(api))
+	// client, _ := genai.NewClient(ctx, option.WithAPIKey(api))
+	if err != nil {
+		return " Failed to cannect to the brain!"
+
+	}
+	defer client.Close()
+
+	// model := client.GenerativeModel("gemini-2.5-flash-lite")
+	// model := client.GenerativeModel("gemini-3-flash-preview")
+	model := client.GenerativeModel("gemini-3.1-flash-lite-preview")
+
+	resp, err := model.GenerateContent(ctx, genai.Text(userInput))
+
+	if err != nil {
+		// This will print the actual error from Google in your Discord
+		return fmt.Sprintf("❌ Captin there is a API Error: %v", err)
+	}
+
+	return fmt.Sprint(resp.Candidates[0].Content.Parts[0])
+
 }
 
 func main() {
@@ -51,7 +104,7 @@ func main() {
 	// set intent
 
 	dg.Identify.Intents = discordgo.IntentsGuildMessages
-
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentMessageContent)
 	dg.AddHandler(massagecreate)
 
 	// open connection
